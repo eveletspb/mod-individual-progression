@@ -403,9 +403,69 @@ public:
         return false;
     }
 
-    static bool HandleAttuneIndividualProgressionCommand(ChatHandler* handler, std::string location)
+    static bool HandleAttuneIndividualProgressionCommand(
+        ChatHandler* handler, std::string location, Optional<PlayerIdentifier> playerIdentifier)
     {
-        Player* player = handler->GetSession()->GetPlayer();
+        if (location == "naxx40")
+        {
+            if (!playerIdentifier)
+                playerIdentifier = PlayerIdentifier::FromTargetOrSelf(handler);
+
+            if (!playerIdentifier)
+            {
+                handler->SendSysMessage("Player not found. Use .ip attune naxx40 <player>.");
+                return false;
+            }
+
+            std::string playerName = playerIdentifier->GetName();
+            Player* target = playerIdentifier->GetConnectedPlayer();
+            if (!target)
+            {
+                handler->PSendSysMessage("Player |cff00ffff{}|r is not online.", playerName);
+                return false;
+            }
+
+            if (sIndividualProgression->isAttuned(target))
+            {
+                handler->PSendSysMessage("Player |cff00ffff{}|r is already attuned to Naxxramas.", playerName);
+                return true;
+            }
+
+            static uint32 const attunementQuests[] =
+            {
+                NAXX40_ATTUNEMENT_1,
+                NAXX40_ATTUNEMENT_2,
+                NAXX40_ATTUNEMENT_3
+            };
+
+            Quest const* quest = nullptr;
+            for (uint32 questId : attunementQuests)
+            {
+                QuestStatus questStatus = target->GetQuestStatus(questId);
+                if (questStatus == QUEST_STATUS_INCOMPLETE || questStatus == QUEST_STATUS_COMPLETE ||
+                    questStatus == QUEST_STATUS_REWARDED)
+                    continue;
+
+                quest = sObjectMgr->GetQuestTemplate(questId);
+                if (quest)
+                    break;
+            }
+
+            if (!quest)
+            {
+                handler->SendSysMessage("No unused Naxxramas attunement quest marker is available.");
+                return false;
+            }
+
+            uint32 questId = quest->GetQuestId();
+            target->AddQuest(quest, nullptr);
+            target->CompleteQuest(questId);
+            target->RewardQuest(quest, 0, target, false, false);
+            handler->PSendSysMessage("Granted Naxxramas 40 attunement to |cff00ffff{}|r.", playerName);
+            return true;
+        }
+
+        Player* player = handler->GetSession() ? handler->GetSession()->GetPlayer() : nullptr;
 
         if (!player)
         {
@@ -415,7 +475,7 @@ public:
 
         if (location.empty())
             return false;
-        
+
         if (location != "onyxia40" && location != "onyxia" && location != "bt" && location != "blacktemple")
         {
             handler->PSendSysMessage("|cff00ffff{}|r is not a valid attunement.", location);

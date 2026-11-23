@@ -4,6 +4,11 @@
 
 This module simulates progress through expansions and expansion tiers for individual players.
 
+## GM command
+
+Use `.ip attune naxx40 <player>` to grant the selected online character or bot the
+Naxxramas 40 attunement. The command is safe to repeat and requires Game Master access.
+
 Each tier is designed to simulate the experience of being within that tier and expansion, within the limitations of the WotLK client. This means Vanilla content is like it was during Vanilla WoW.
 
 The goal of the module is to focus on the journey of the player. All catch-up mechanics have been removed. There is no goal to rush to end-game or find a "fresh" server, because each new character is a fresh experience.
